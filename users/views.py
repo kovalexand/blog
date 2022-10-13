@@ -14,6 +14,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = UserModel.objects.filter(is_active=True)
     parser_classes = (MultiPartParser, )
     SAFE_ACTIONS = ('create', 'list', 'retrieve')
+    lookup_url_kwarg = 'user_id'
 
     def get_permissions(self):
         permission_classes = [AllowAny, ]
