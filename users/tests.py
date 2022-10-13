@@ -16,7 +16,7 @@ class UserPermissionTestClass(APITestCase):
     second_user_password: str = "password"
     second_user_username: str = "username"
     user_detail_view: str = 'users:user-detail'
-    user_lookup_field: str = "pk"
+    lookup_url_kwarg: str = "user_id"
 
     @staticmethod
     def bearer_token(email: str) -> dict:
@@ -37,7 +37,7 @@ class UserPermissionTestClass(APITestCase):
     def test_delete_user_by_another_user(self):
         first_user = UserModel.objects.get(email=self.first_user_email)
         second_user = UserModel.objects.get(email=self.second_user_email)
-        data = {self.user_lookup_field: first_user.pk}
+        data = {self.lookup_url_kwarg: first_user.pk}
         user_detail_url = reverse(viewname=self.user_detail_view, kwargs=data)
         token = self.bearer_token(second_user.email)
         response = self.client.delete(user_detail_url, **token)
@@ -45,7 +45,7 @@ class UserPermissionTestClass(APITestCase):
 
     def test_delete_user_by_current_user(self):
         first_user = UserModel.objects.get(email=self.first_user_email)
-        data = {self.user_lookup_field: first_user.pk}
+        data = {self.lookup_url_kwarg: first_user.pk}
         user_detail_url = reverse(viewname=self.user_detail_view, kwargs=data)
         token = self.bearer_token(first_user.email)
         response = self.client.delete(user_detail_url, **token)
