@@ -2,20 +2,11 @@ from rest_framework import permissions
 
 
 class IsCurrentUserAuthenticated(permissions.BasePermission):
+    lookup_url_kwarg = 'user_id'
+
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated)
-
-    def has_object_permission(self, request, view, obj):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return bool(obj and request.user and request.user.pk == obj.pk)
-
-
-class IsCurrentOwnerAuthenticated(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated)
-
-    def has_object_permission(self, request, view, obj):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return bool(obj and request.user and request.user.pk == obj.owner.pk)
+        return bool(
+            request.user and request.user.is_authenticated
+            and self.lookup_url_kwarg in view.kwargs
+            and int(view.kwargs[self.lookup_url_kwarg]) == request.user.pk
+        )
