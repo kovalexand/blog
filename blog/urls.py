@@ -8,4 +8,5 @@ urlpatterns = [
     path('auth/login/', TokenObtainPairView.as_view()),
     path('api/', include('users.urls', namespace='users')),
     path('api/', include('categories.urls', namespace='categories')),
+    path('api/', include('posts.urls', namespace='posts')),
 ]
