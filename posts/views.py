@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from rest_framework import viewsets
+from rest_framework import viewsets, mixins
 from rest_framework.permissions import AllowAny
 from rest_framework.generics import get_object_or_404
 
@@ -11,7 +11,7 @@ from posts.serializers import PostSerializer
 UserModel = get_user_model()
 
 
-class PostViewSet(viewsets.ReadOnlyModelViewSet):
+class PostViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = PostSerializer
     queryset = Post.objects.filter(owner__is_active=True)
     permission_classes = (AllowAny, )
