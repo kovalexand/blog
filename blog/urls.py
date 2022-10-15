@@ -9,4 +9,5 @@ urlpatterns = [
     path('api/', include('users.urls', namespace='users')),
     path('api/', include('categories.urls', namespace='categories')),
     path('api/', include('posts.urls', namespace='posts')),
+    path('api/', include('comments.urls', namespace='comments')),
 ]
