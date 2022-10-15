@@ -1,7 +1,7 @@
 from rest_framework.routers import DefaultRouter
 from comments import views
 
-app_name = "posts"
+app_name = "comments"
 routers = DefaultRouter()
 routers.register(r'comments', views.CommentViewSet, basename='comment')
 routers.register(r'users/(?P<user_id>[^/.]+)/comments', views.UserCommentViewSet, basename='user-comment')
