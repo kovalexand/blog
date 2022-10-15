@@ -1,7 +1,7 @@
 from rest_framework.routers import DefaultRouter
 from posts import views
 
-app_name = "posts"
+app_name = 'posts'
 routers = DefaultRouter()
 routers.register(r'posts', views.PostViewSet, basename='post')
 routers.register(r'users/(?P<user_id>[^/.]+)/posts', views.UserPostViewSet, basename='user-post')
