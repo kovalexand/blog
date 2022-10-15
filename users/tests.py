@@ -1,3 +1,5 @@
+from typing import Any
+
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -8,45 +10,92 @@ from rest_framework_simplejwt.tokens import RefreshToken
 UserModel = get_user_model()
 
 
-class UserPermissionTestClass(APITestCase):
-    first_user_email: str = "ftest@gmail.com"
-    first_user_password: str = "password"
-    first_user_username: str = "username"
-    second_user_email: str = "stest@gmail.com"
-    second_user_password: str = "password"
-    second_user_username: str = "username"
-    user_detail_view: str = 'users:user-detail'
-    lookup_url_kwarg: str = "user_id"
+class UsersTestClass(APITestCase):
+    users: list = []
+    users_count: int = 2
+    users_password: str = r'user-test-password'
+    users_email_pr: str = '@gmail.com'
+    user_lookup_url_kwarg: str = 'user_id'
 
     @staticmethod
-    def bearer_token(email: str) -> dict:
-        user = UserModel.objects.get(email=email)
-        refresh = RefreshToken.for_user(user)
-        return {"HTTP_AUTHORIZATION": f'Bearer {refresh.access_token}'}
+    def bearer_token(user: Any) -> dict:
+        token = RefreshToken.for_user(user)
+        return {'HTTP_AUTHORIZATION': f'Bearer {token.access_token}'}
 
     def setUp(self) -> None:
-        first_user = UserModel.objects.create_user(
-            email=self.first_user_email, password=self.first_user_password, username=self.first_user_username
-        )
-        second_user = UserModel.objects.create_user(
-            email=self.second_user_email, password=self.second_user_password, username=self.second_user_username
-        )
-        first_user.save()
-        second_user.save()
+        self.users = [
+            UserModel(username=f'user{index}', email=f'email{index}'+self.users_email_pr, password=self.users_password)
+            for index in range(self.users_count)
+        ]
+        for user in self.users:
+            user.save()
 
-    def test_delete_user_by_another_user(self):
-        first_user = UserModel.objects.get(email=self.first_user_email)
-        second_user = UserModel.objects.get(email=self.second_user_email)
-        data = {self.lookup_url_kwarg: first_user.pk}
-        user_detail_url = reverse(viewname=self.user_detail_view, kwargs=data)
-        token = self.bearer_token(second_user.email)
-        response = self.client.delete(user_detail_url, **token)
+    def test_retrieve_user_method(self):
+        kwargs = {self.user_lookup_url_kwarg: self.users[0].pk}
+        url = reverse(viewname='users:user-detail', kwargs=kwargs)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_retrieve_bad_request_user_method(self):
+        kwargs = {self.user_lookup_url_kwarg: None}
+        url = reverse(viewname='users:user-detail', kwargs=kwargs)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_list_user_method(self):
+        url = reverse('users:user-list')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_create_user_method(self):
+        url = reverse('users:user-list')
+        data = {'email': 'test'+self.users_email_pr, 'password': self.users_password, 'username': 'test'}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_already_exist_user_method(self):
+        url = reverse('users:user-list')
+        user = self.users[0]
+        data = {'email': user.email, 'password': user.password, 'username': user.username}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_user_method(self):
+        user = self.users[0]
+        kwargs = {self.user_lookup_url_kwarg: user.pk}
+        url = reverse(viewname='users:user-detail', kwargs=kwargs)
+        data = {'password': 'new_password'}
+        token = self.bearer_token(user)
+        response = self.client.patch(url, data, **token)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = {'email': user.email, 'password': user.password, 'username': user.username}
+        response = self.client.put(url, data, **token)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_update_by_another_user_method(self):
+        user = self.users[0]
+        kwargs = {self.user_lookup_url_kwarg: user.pk}
+        url = reverse(viewname='users:user-detail', kwargs=kwargs)
+        data = {'password': 'new_password'}
+        token = self.bearer_token(self.users[1])
+        response = self.client.patch(url, data, **token)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        data = {'email': user.email, 'password': user.password, 'username': user.username}
+        response = self.client.put(url, data, **token)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_delete_user_by_current_user(self):
-        first_user = UserModel.objects.get(email=self.first_user_email)
-        data = {self.lookup_url_kwarg: first_user.pk}
-        user_detail_url = reverse(viewname=self.user_detail_view, kwargs=data)
-        token = self.bearer_token(first_user.email)
-        response = self.client.delete(user_detail_url, **token)
+    def test_delete_user_method(self):
+        user = self.users[0]
+        kwargs = {self.user_lookup_url_kwarg: user.pk}
+        url = reverse(viewname='users:user-detail', kwargs=kwargs)
+        token = self.bearer_token(user)
+        response = self.client.delete(url, **token)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_delete_user_by_another_user_method(self):
+        user = self.users[0]
+        kwargs = {self.user_lookup_url_kwarg: user.pk}
+        url = reverse(viewname='users:user-detail', kwargs=kwargs)
+        token = self.bearer_token(self.users[1])
+        response = self.client.delete(url, **token)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
