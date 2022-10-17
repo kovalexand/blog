@@ -12,18 +12,20 @@ UserModel = get_user_model()
 
 
 class CommentViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
-    serializer_class = CommentSerializer()
+    serializer_class = CommentSerializer
     queryset = Comment.objects.filter(author__is_active=True)
     permission_classes = (AllowAny, )
+    lookup_url_kwarg = 'comment_id'
 
 
 class PostCommentViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = CommentSerializer()
+    serializer_class = CommentSerializer
     permission_classes = (AllowAny, )
     post_lookup_url_kwarg = 'post_id'
+    lookup_url_kwarg = 'comment_id'
 
     def get_post_object(self):
-        queryset = Post.objects.filter(owner__is_active=True)
+        queryset = Post.objects.prefetch_related('comments').filter(owner__is_active=True)
         post = get_object_or_404(queryset, id=self.kwargs[self.post_lookup_url_kwarg])
         return post
 
@@ -37,6 +39,7 @@ class UserCommentViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = (AllowAny, )
     user_lookup_url_kwarg = 'user_id'
+    lookup_url_kwarg = 'comment_id'
 
     def get_user_object(self):
         queryset = UserModel.objects.filter(is_active=True)
@@ -45,7 +48,7 @@ class UserCommentViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.get_user_object()
-        queryset = Comment.objects.filter(owner=user)
+        queryset = Comment.objects.filter(author=user)
         return queryset
 
 
@@ -53,6 +56,7 @@ class UserPostCommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     user_lookup_url_kwarg = 'user_id'
     post_lookup_url_kwarg = 'post_id'
+    lookup_url_kwarg = 'comment_id'
     SAFE_ACTIONS = ['retrieve', 'list']
 
     def get_permissions(self):
@@ -67,17 +71,17 @@ class UserPostCommentViewSet(viewsets.ModelViewSet):
         return user
 
     def get_post_object(self):
-        queryset = Post.objects.filter(owner__is_active=True)
+        queryset = Post.objects.prefetch_related('comments').filter(owner__is_active=True)
         post = get_object_or_404(queryset, id=self.kwargs[self.post_lookup_url_kwarg])
         return post
 
     def get_queryset(self):
         user = self.get_user_object()
         post = self.get_post_object()
-        queryset = Comment.objects.filter(owner=user, post=post)
+        queryset = Comment.objects.filter(author=user, post=post)
         return queryset
 
     def perform_create(self, serializer):
         user = self.get_user_object()
         post = self.get_post_object()
-        serializer.save(owner=user, post=post)
+        serializer.save(author=user, post=post)
