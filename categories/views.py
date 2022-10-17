@@ -12,8 +12,9 @@ UserModel = get_user_model()
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CategorySerializer
-    queryset = Category.objects.filter(owner__is_active=True)
+    queryset = Category.objects.prefetch_related('posts', 'posts__comments').filter(owner__is_active=True)
     permission_classes = (AllowAny, )
+    lookup_url_kwarg = 'category_id'
 
 
 class UserCategoryViewSet(viewsets.ModelViewSet):
@@ -35,7 +36,7 @@ class UserCategoryViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.get_user_object()
-        queryset = Category.objects.filter(owner=user)
+        queryset = Category.objects.prefetch_related('posts', 'posts__comments').filter(owner=user)
         return queryset
 
     def perform_create(self, serializer):
