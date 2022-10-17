@@ -1,11 +1,24 @@
 version: "3.9"
 services:
   db:
-    image: bitnami/postgresql
+    image: postgres:latest
     restart: always
-    ports:
-      - "${DB_PORT}:5432"
     environment:
       - POSTGRES_USER=${DB_NAME}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_DATABASE}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - "${DB_PORT}"
+  web:
+    build: .
+    command: python /usr/src/blog/manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/usr/src/blog
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+volumes:
+  postgres_data:
