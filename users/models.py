@@ -9,7 +9,8 @@ class User(AbstractUser, PermissionsMixin):
     username_validator = UnicodeUsernameValidator()
     username = models.CharField(max_length=15, validators=[username_validator])
     email = models.EmailField(db_index=True, unique=True)
-    image = models.ImageField(upload_to=settings.MEDIA_ROOT+'/users', null=True, blank=True)
+    image = models.ImageField(upload_to='users', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
