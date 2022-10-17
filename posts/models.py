@@ -7,10 +7,10 @@ UserModel = get_user_model()
 
 
 class Post(models.Model):
-    title = models.CharField(max_length=50, unique=True)
+    title = models.CharField(max_length=50)
     content = models.CharField(max_length=100, blank=True)
     owner = models.ForeignKey(UserModel, on_delete=models.CASCADE)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='posts')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
