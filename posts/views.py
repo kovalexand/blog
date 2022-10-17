@@ -13,23 +13,25 @@ UserModel = get_user_model()
 
 class PostViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = PostSerializer
-    queryset = Post.objects.filter(owner__is_active=True)
+    queryset = Post.objects.prefetch_related('comments').filter(owner__is_active=True)
     permission_classes = (AllowAny, )
+    lookup_url_kwarg = 'post_id'
 
 
 class CategoryPostViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PostSerializer
     permission_classes = (AllowAny, )
     category_lookup_url_kwarg = 'category_id'
+    lookup_url_kwarg = 'post_id'
 
     def get_category_object(self):
-        queryset = Category.objects.filter(owner__is_active=True)
+        queryset = Category.objects.prefetch_related('posts', 'posts__comments').filter(owner__is_active=True)
         category = get_object_or_404(queryset, id=self.kwargs[self.category_lookup_url_kwarg])
         return category
 
     def get_queryset(self):
         category = self.get_category_object()
-        queryset = Post.objects.filter(category=category, owner__is_active=True)
+        queryset = Post.objects.prefetch_related('comments').filter(category=category, owner__is_active=True)
         return queryset
 
 
@@ -37,6 +39,7 @@ class UserPostViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PostSerializer
     permission_classes = (AllowAny, )
     user_lookup_url_kwarg = 'user_id'
+    lookup_url_kwarg = 'post_id'
 
     def get_user_object(self):
         queryset = UserModel.objects.filter(is_active=True)
@@ -45,7 +48,7 @@ class UserPostViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.get_user_object()
-        queryset = Post.objects.filter(owner=user)
+        queryset = Post.objects.prefetch_related('comments').filter(owner=user)
         return queryset
 
 
@@ -53,6 +56,7 @@ class UserCategoryPostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     user_lookup_url_kwarg = 'user_id'
     category_lookup_url_kwarg = 'category_id'
+    lookup_url_kwarg = 'post_id'
     SAFE_ACTIONS = ['retrieve', 'list']
 
     def get_permissions(self):
@@ -67,14 +71,14 @@ class UserCategoryPostViewSet(viewsets.ModelViewSet):
         return user
 
     def get_category_object(self):
-        queryset = Category.objects.filter(owner__is_active=True)
+        queryset = Category.objects.prefetch_related('posts', 'posts__comments').filter(owner__is_active=True)
         category = get_object_or_404(queryset, id=self.kwargs[self.category_lookup_url_kwarg])
         return category
 
     def get_queryset(self):
         user = self.get_user_object()
         category = self.get_category_object()
-        queryset = Post.objects.filter(owner=user, category=category)
+        queryset = Post.objects.prefetch_related('comments').filter(owner=user, category=category)
         return queryset
 
     def perform_create(self, serializer):
