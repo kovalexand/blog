@@ -1,45 +1,18 @@
-from typing import Any
-
-from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
 
-from rest_framework_simplejwt.tokens import RefreshToken
-
-from categories.models import Category
+from blog.tests import ApplicationTestBaseClass
 
 UserModel = get_user_model()
 
 
-class CategoryTestClass(APITestCase):
-    users: list = []
-    categories: list = []
-    users_count: int = 2
-    categories_count: int = 2
-    users_password: str = r'user-test-password'
-    users_email_pr: str = '@gmail.com'
-    user_lookup_url_kwarg: str = 'user_id'
-    category_lookup_url_kwarg: str = 'category_id'
-
-    @staticmethod
-    def bearer_token(user: Any) -> dict:
-        token = RefreshToken.for_user(user)
-        return {'HTTP_AUTHORIZATION': f'Bearer {token.access_token}'}
-
-    def setUp(self) -> None:
-        self.users = [
-            UserModel(username=f'user{index}', email=f'email{index}'+self.users_email_pr, password=self.users_password)
-            for index in range(self.users_count)
-        ]
-        for user in self.users:
-            user.save()
-        self.categories = [
-            Category(title=str(index), owner=self.users[0])
-            for index in range(self.categories_count)
-        ]
-        for category in self.categories:
-            category.save()
+class CategoryTestClass(ApplicationTestBaseClass):
+    def test_retrieve_category_with_query_method(self):
+        kwargs = {self.category_lookup_url_kwarg: self.categories[0].pk}
+        url = '%s?q=title' % reverse(viewname='categories:category-detail', kwargs=kwargs)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_retrieve_category_method(self):
         kwargs = {self.category_lookup_url_kwarg: self.categories[0].pk}
@@ -81,7 +54,7 @@ class CategoryTestClass(APITestCase):
         kwargs = {self.user_lookup_url_kwarg: user.pk}
         url = reverse(viewname='categories:user-category-list', kwargs=kwargs)
         data = {'title': 'test'}
-        token = self.bearer_token(user)
+        token = self.get_token(user)
         response = self.client.post(url, data, **token)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -98,7 +71,7 @@ class CategoryTestClass(APITestCase):
         kwargs = {self.user_lookup_url_kwarg: user.pk}
         url = reverse(viewname='categories:user-category-list', kwargs=kwargs)
         data = {'wrong_arg': 'test'}
-        token = self.bearer_token(user)
+        token = self.get_token(user)
         response = self.client.post(url, data, **token)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -107,7 +80,7 @@ class CategoryTestClass(APITestCase):
         kwargs = {self.user_lookup_url_kwarg: user.pk}
         url = reverse(viewname='categories:user-category-list', kwargs=kwargs)
         data = {'title': 'test'}
-        token = self.bearer_token(self.users[1])
+        token = self.get_token(self.users[1])
         response = self.client.post(url, data, **token)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -116,7 +89,7 @@ class CategoryTestClass(APITestCase):
         kwargs = {self.user_lookup_url_kwarg: user.pk, self.category_lookup_url_kwarg: self.categories[0].pk}
         url = reverse(viewname='categories:user-category-detail', kwargs=kwargs)
         data = {'title': 'new_title'}
-        token = self.bearer_token(user)
+        token = self.get_token(user)
         response = self.client.patch(url, data, **token)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = self.client.put(url, data, **token)
@@ -137,7 +110,7 @@ class CategoryTestClass(APITestCase):
         kwargs = {self.user_lookup_url_kwarg: user.pk, self.category_lookup_url_kwarg: self.categories[0].pk}
         url = reverse(viewname='categories:user-category-detail', kwargs=kwargs)
         data = {'title': 'new_title'}
-        token = self.bearer_token(self.users[1])
+        token = self.get_token(self.users[1])
         response = self.client.patch(url, data, **token)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         response = self.client.put(url, data, **token)
@@ -148,7 +121,7 @@ class CategoryTestClass(APITestCase):
         kwargs = {self.user_lookup_url_kwarg: user.pk, self.category_lookup_url_kwarg: self.categories[0].pk}
         url = reverse(viewname='categories:user-category-detail', kwargs=kwargs)
         data = {'wrong_arg': 'new_title'}
-        token = self.bearer_token(user)
+        token = self.get_token(user)
         response = self.client.patch(url, data, **token)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response = self.client.put(url, data, **token)
@@ -158,7 +131,7 @@ class CategoryTestClass(APITestCase):
         user = self.users[0]
         kwargs = {self.user_lookup_url_kwarg: user.pk, self.category_lookup_url_kwarg: self.categories[0].pk}
         url = reverse(viewname='categories:user-category-detail', kwargs=kwargs)
-        token = self.bearer_token(user)
+        token = self.get_token(user)
         response = self.client.delete(url, **token)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
@@ -166,6 +139,6 @@ class CategoryTestClass(APITestCase):
         user = self.users[0]
         kwargs = {self.user_lookup_url_kwarg: user.pk, self.category_lookup_url_kwarg: self.categories[0].pk}
         url = reverse(viewname='categories:user-category-detail', kwargs=kwargs)
-        token = self.bearer_token(self.users[1])
+        token = self.get_token(self.users[1])
         response = self.client.delete(url, **token)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
