@@ -5,8 +5,8 @@ UserModel = get_user_model()
 
 
 class Category(models.Model):
-    title = models.CharField(max_length=50, unique=True)
-    about = models.CharField(max_length=100, blank=True)
+    title = models.TextField(max_length=50, unique=True)
+    about = models.TextField(max_length=100, blank=True)
     owner = models.ForeignKey(UserModel, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 

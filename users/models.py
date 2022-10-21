@@ -2,8 +2,6 @@ from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser, PermissionsMixin
 
-from blog import settings
-
 
 class User(AbstractUser, PermissionsMixin):
     username_validator = UnicodeUsernameValidator()
