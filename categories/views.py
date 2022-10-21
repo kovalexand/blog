@@ -3,7 +3,9 @@ from rest_framework import viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.generics import get_object_or_404
 
-from users.permissions import IsCurrentUserAuthenticated
+from categories.paginations import CategorySetPagination
+from categories.permissions import IsOwnerCategoryOrReadOnly
+from users.permissions import IsCurrentUserAuthenticatedOrReadOnly
 from categories.models import Category
 from categories.serializers import CategorySerializer
 
@@ -11,34 +13,36 @@ UserModel = get_user_model()
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    queryset = Category.objects.prefetch_related('posts', 'posts__comments').filter(owner__is_active=True)
+    pagination_class = CategorySetPagination
     permission_classes = (AllowAny, )
     lookup_url_kwarg = 'category_id'
+    search_query_param = 'q'
+
+    def get_queryset(self):
+        queryset = self.get_serializer().setup_eager_loading(self.queryset)
+        search_query = self.request.query_params.get(self.search_query_param, None)
+        return queryset.filter(search=search_query) if search_query else queryset
 
 
 class UserCategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    SAFE_ACTIONS = ['retrieve', 'list']
+    pagination_class = CategorySetPagination
+    permission_classes = (IsCurrentUserAuthenticatedOrReadOnly, IsOwnerCategoryOrReadOnly)
     user_lookup_url_kwarg = 'user_id'
     lookup_url_kwarg = 'category_id'
 
     def get_user_object(self):
-        queryset = UserModel.objects.filter(is_active=True)
+        queryset = UserModel.objects.all()
         user = get_object_or_404(queryset, id=self.kwargs[self.user_lookup_url_kwarg])
         return user
 
-    def get_permissions(self):
-        permission_classes = [AllowAny, ]
-        if self.action not in self.SAFE_ACTIONS:
-            permission_classes.append(IsCurrentUserAuthenticated)
-        return [permission() for permission in permission_classes]
-
     def get_queryset(self):
         user = self.get_user_object()
-        queryset = Category.objects.prefetch_related('posts', 'posts__comments').filter(owner=user)
-        return queryset
+        queryset = self.get_serializer().setup_eager_loading(self.queryset)
+        return queryset.filter(owner=user)
 
     def perform_create(self, serializer):
-        user = self.get_user_object()
-        serializer.save(owner=user)
+        serializer.save(owner=self.request.user)
