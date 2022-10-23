@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.generics import get_object_or_404
@@ -18,12 +19,11 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = CategorySetPagination
     permission_classes = (AllowAny, )
     lookup_url_kwarg = 'category_id'
-    search_query_param = 'q'
+    filter_backends = [DjangoFilterBackend]
 
     def get_queryset(self):
         queryset = self.get_serializer().setup_eager_loading(self.queryset)
-        search_query = self.request.query_params.get(self.search_query_param, None)
-        return queryset.filter(search=search_query) if search_query else queryset
+        return queryset
 
 
 class UserCategoryViewSet(viewsets.ModelViewSet):
