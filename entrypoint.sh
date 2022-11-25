@@ -9,6 +9,7 @@ then
     echo "PostgreSQL started"
 fi
 
+python manage.py migrate
 python manage.py makemigrations users
 python manage.py makemigrations categories
 python manage.py makemigrations posts
