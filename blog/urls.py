@@ -5,6 +5,7 @@ from rest_framework_simplejwt.views import TokenRefreshView, TokenObtainPairView
 
 from blog import settings
 from blog.settings import DEBUG
+from blog.yasg import url_patterns as doc_urls
 from categories.views import CategoryViewSet, UserCategoryViewSet
 from comments.views import CommentViewSet, UserCommentViewSet, PostCommentViewSet, UserPostCommentViewSet
 from posts.views import PostViewSet, UserPostViewSet, CategoryPostViewSet, UserCategoryPostViewSet
@@ -38,8 +39,10 @@ static_urls = static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 urlpatterns = [
     path(r'api/', include(routers.urls)),
     path(r'auth/refresh/', TokenRefreshView.as_view()),
-    path(r'auth/login/', TokenObtainPairView.as_view())
+    path(r'auth/login/', TokenObtainPairView.as_view(), name='login')
 ]
+
+urlpatterns += doc_urls
 
 if DEBUG:
     urlpatterns += static_urls + media_urls
